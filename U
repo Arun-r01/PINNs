@@ -1,0 +1,67 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  12
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volVectorField;
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// NACA0012 at Re_c = 200,000, AoA = 5 degrees
+// U_inf = 1 m/s,  chord c = 1 m,  nu = 5e-6 m^2/s  =>  Re = 200,000
+// AoA = 5 deg:
+//   Ux = U_inf * cos(5 deg) = 1.0 * 0.99619 = 0.99619 m/s
+//   Uy = 0 (spanwise, 2-D case)
+//   Uz = U_inf * sin(5 deg) = 1.0 * 0.08716 = 0.08716 m/s
+//
+// Patch names match blockMeshDict: inlet, outlet, aerofoil, back, front
+// NOTE: blockMeshDict 'inlet' covers the full C-mesh farfield arc
+//       (left + top + bottom farfield faces) — all set to AoA-corrected freestream
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (0.99619 0 0.08716);
+
+boundaryField
+{
+    // ── Full farfield C-mesh boundary ─────────────────────────────────────────
+    // freestream allows outflow if streamlines exit through this boundary
+    inlet
+    {
+        type            freestreamVelocity;
+        freestreamValue uniform (0.99619 0 0.08716);  // AoA = 5 deg corrected
+    }
+
+    // ── Wake / trailing-edge exit boundary ───────────────────────────────────
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform (0.99619 0 0.08716);
+        value           uniform (0.99619 0 0.08716);
+    }
+
+    // ── Airfoil surface — no-slip wall ────────────────────────────────────────
+    aerofoil
+    {
+        type            noSlip;
+    }
+
+    // ── Spanwise empty patches (2-D simulation) ───────────────────────────────
+    back
+    {
+        type            empty;
+    }
+
+    front
+    {
+        type            empty;
+    }
+}
+
+// ************************************************************************* //

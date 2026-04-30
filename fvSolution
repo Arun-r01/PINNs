@@ -1,0 +1,95 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  12
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// NACA4412 at Re_c = 200,000
+// Tighter tolerances and residual targets for high-quality PINN training data.
+// Relaxation factors are conservative for the first 2000 iter then can be
+// increased via setFields / manual restart if needed.
+
+solvers
+{
+    p
+    {
+        solver          GAMG;
+        tolerance       1e-07;
+        relTol          0.05;
+        smoother        GaussSeidel;
+        nPreSweeps      0;
+        nPostSweeps     2;
+        cacheAgglomeration true;
+        nCellsInCoarsestLevel 10;
+        agglomerator    faceAreaPair;
+        mergeLevels     1;
+    }
+
+    U
+    {
+        solver          smoothSolver;
+        smoother        GaussSeidel;
+        nSweeps         2;
+        tolerance       1e-09;
+        relTol          0.05;
+    }
+
+    k
+    {
+        solver          smoothSolver;
+        smoother        GaussSeidel;
+        nSweeps         2;
+        tolerance       1e-09;
+        relTol          0.05;
+    }
+
+    omega
+    {
+        solver          smoothSolver;
+        smoother        GaussSeidel;
+        nSweeps         2;
+        tolerance       1e-09;
+        relTol          0.05;
+    }
+}
+
+SIMPLE
+{
+    nNonOrthogonalCorrectors 1;   // 1 corrector for slightly non-orthogonal mesh
+
+    consistent      yes;          // use SIMPLEC for better pressure-velocity coupling
+
+    residualControl
+    {
+        p               1e-6;
+        U               1e-6;
+        k               1e-6;
+        omega           1e-6;
+    }
+}
+
+relaxationFactors
+{
+    fields
+    {
+        p               0.3;
+    }
+    equations
+    {
+        U               0.7;
+        k               0.5;
+        omega           0.5;
+    }
+}
+
+// ************************************************************************* //

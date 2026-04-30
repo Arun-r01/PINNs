@@ -1,0 +1,31 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  12
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      momentumTransport;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// k-omega SST: suitable for adverse-pressure-gradient boundary layers
+// and wing sections with possible separation — matches the paper's RANS framework
+
+simulationType RAS;
+
+RAS
+{
+    model           kOmegaSST;
+
+    turbulence      on;
+
+    printCoeffs     on;
+}
+
+// ************************************************************************* //

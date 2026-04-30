@@ -1,0 +1,114 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  12
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// NACA4412, Re_c = 200,000, AoA = 5 deg
+// Steady-state RANS (SIMPLE).  Run 5000 iterations for convergence.
+// Final converged field is used as PINN training data (domain 0.5 < x/c < 1).
+
+application     foamRun;
+
+solver          incompressibleFluid;
+
+startFrom       latestTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         175;
+
+deltaT          0.001;
+
+writeControl    timeStep;
+
+writeInterval   500;      // write every 500 iterations to monitor convergence
+
+purgeWrite      0;        // keep only the last 2 write times (save disk space)
+
+writeFormat     ascii;
+
+writePrecision  8;        // higher precision for PINN training data
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable true;
+
+// ─── Function Objects ─────────────────────────────────────────────────────────
+
+functions
+{
+    forceCoeffs
+    {
+        type            forceCoeffs;
+        libs            ("libforces.so");
+
+        executeControl  timeStep;
+        executeInterval 50;
+        writeControl    timeStep;
+        writeInterval   50;
+
+        patches         (aerofoil);
+
+        // AoA = 5 degrees
+        // dragDir = freestream direction = (cos5, 0, sin5)
+        // liftDir = perpendicular to freestream = (-sin5, 0, cos5)
+        dragDir         (0.99619 0 0.08716);
+        liftDir         (-0.08716 0 0.99619);
+        pitchAxis       (0 1 0);
+
+        // Quarter-chord point as moment reference
+        CofR            (0.25 0 0);
+
+        rho             rhoInf;
+        rhoInf          1;          // kg/m^3
+
+        magUInf         1.0;        // m/s  (U_inf = 1 m/s)
+        lRef            1.0;        // m    (chord c = 1 m)
+        Aref            0.2;        // m^2  (chord x span = 1 x 0.2)
+    }
+
+    // ── Write Reynolds-stress components for PINN training data ──────────────
+    // The PINN needs: U, V, P, u'u', u'v', v'v'  on the domain boundaries.
+    // These are automatically written with the standard turbulence fields.
+    // After the run, use postProcess -func writeCellCentres and sample utilities
+    // to extract data in the PINN domain  0.5 < x/c < 1  on suction side.
+
+    residuals
+    {
+        type            residuals;
+        libs            ("libutilityFunctionObjects.so");
+        fields          (U p k omega);
+        executeControl  timeStep;
+        executeInterval 1;
+        writeControl    timeStep;
+        writeInterval   50;
+    }
+    
+    yPlus
+    {
+        type            yPlus;
+        libs            ("libfieldFunctionObjects.so");
+        writeControl    writeTime;
+        writeInterval   1;
+    }
+
+}
+
+// ************************************************************************* //
